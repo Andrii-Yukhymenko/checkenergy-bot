@@ -3,6 +3,7 @@ const TelegramBot = require('node-telegram-bot-api');
 
 const express = require('express');
 const app = express();
+app.use(express.text());
 const PORT = process.env.PORT || 3000;
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -16,18 +17,21 @@ let alertSent = false; // Флаг уведомления о потере эле
 let restoreAlertSent = true; // Флаг уведомления о восстановлении электричества
 let lastPowerOnTime = Date.now();
 let lastPowerOffTime = Date.now();
+let serviceMode = true;
 
 app.post('/checkenergy', (req, res) => {
   lastRequestTime = Date.now(); // Обновляем время последнего запроса
   alertSent = false;
   console.log(`Request received at ${new Date().toLocaleString()}`);
+  console.log(req.body);
+  serviceMode = req.body === 'Service mode';
   res.sendStatus(200);
 });
 
 // Проверка времени последнего запроса
 const checkLastRequestTime = () => {
   const currentTime = Date.now();
-  if (currentTime - lastRequestTime > TIMEOUT) {
+  if (currentTime - lastRequestTime > TIMEOUT && !serviceMode) {
     if (!alertSent) {
       let duration = (Date.now() - lastPowerOffTime);
       sendTelegramAlert(`⚠️ Світла немає! Світло було ${formatDuration(duration)}`);
